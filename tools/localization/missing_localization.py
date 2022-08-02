@@ -12,9 +12,7 @@ import sys
 import difflib
 
 def extract_table_key(x):
-  if x.startswith('["') and x.endswith('"]'):
-    return x[2:-2]
-  return x
+  return x[2:-2] if x.startswith('["') and x.endswith('"]') else x
 
 class LocalizationFile(object):
   def __init__(self, name):
@@ -105,17 +103,17 @@ def doCompare(base_file, cmp_file):
       ))
 
 def doMissing(base_file, cmp_file):
-    existing = set([line[0] for line in base_file])
+  existing = {line[0] for line in base_file}
 
-    for line in cmp_file:
-      stringid = line[0]
+  for line in cmp_file:
+    stringid = line[0]
 
-      if not stringid in existing:
-        print(stringid)
+    if stringid not in existing:
+      print(stringid)
 
 if __name__ == "__main__":
   def usage():
-    print("Usage: " + sys.argv[0] + " [cmp|missing] base_file cmp_file")
+    print(f"Usage: {sys.argv[0]} [cmp|missing] base_file cmp_file")
     exit(1)
 
   if len(sys.argv) != 4:

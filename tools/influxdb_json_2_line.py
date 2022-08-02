@@ -28,11 +28,11 @@ def json2Line(j, tags):
 
     tag_idx = [idx for idx,col in enumerate(cols) if col in tags]
     tag_cols = [col for col in cols if col in tags]
-    metrics_cols = [col for col in cols if not col in tags]
+    metrics_cols = [col for col in cols if col not in tags]
 
     for v in vals:
       tags_vals = [val for idx,val in enumerate(v) if idx in tag_idx]
-      metric_vals = [val for idx,val in enumerate(v) if not idx in tag_idx]
+      metric_vals = [val for idx,val in enumerate(v) if idx not in tag_idx]
       tags = dict(zip(tag_cols, tags_vals))
       metrics = dict(zip(metrics_cols, metric_vals))
 
@@ -42,10 +42,9 @@ def json2Line(j, tags):
       timestamp = "%d000000000" % time_val
 
       # "iface:traffic,ifid=0 bytes=0 1539358699000000000\n"
-      print("%s %s %s" % (
-        ",".join([name,] + ["%s=%s" % (k,v) for k,v in tags.items()]),
-        ",".join(["%s=%s" % (k,v) for k,v in metrics.items()]),
-        timestamp))
+      print(
+          f'{",".join([name,] + [f"{k}={v}" for k,v in tags.items()])} {",".join([f"{k}={v}" for k,v in metrics.items()])} {timestamp}'
+      )
 
 if __name__ == "__main__":
   if len(sys.argv) != 2:

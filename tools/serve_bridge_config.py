@@ -70,7 +70,7 @@ def run(port=8000):
     #ip and port of server
     server_address = ('0.0.0.0', port)
     httpd = HTTPServer(server_address, Handler)
-    print('http server is running...listening on port %s' %port)
+    print(f'http server is running...listening on port {port}')
     httpd.serve_forever()
 
 if __name__ == '__main__':

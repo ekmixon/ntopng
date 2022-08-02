@@ -22,23 +22,11 @@ def usage():
 if len(sys.argv) < 2:
   usage()
 
-if len(sys.argv) >= 3:
-  indentation = " " * int(sys.argv[2])
-else:
-  indentation = "    "
-
-if len(sys.argv) >= 4 and sys.argv[3] == "--c-output":
-  c_output = True
-else:
-  c_output = False
-
+indentation = " " * int(sys.argv[2]) if len(sys.argv) >= 3 else "    "
+c_output = len(sys.argv) >= 4 and sys.argv[3] == "--c-output"
 # ------------------------------------------------------------------------------
 
-if sys.argv[1] == "-":
-  fin = sys.stdin
-else:
-  fin = open(sys.argv[1])
-
+fin = sys.stdin if sys.argv[1] == "-" else open(sys.argv[1])
 start_ok = False
 
 localized = []
@@ -53,29 +41,28 @@ for line in fin:
     if lstripped.startswith("Major protocol (%L7_PROTO) symbolic mapping"):
       break
 
-    pattern = re.search('^([^:]+):$', lstripped)
-    if pattern:
+    if pattern := re.search('^([^:]+):$', lstripped):
       # This is a section delimiter
       label = pattern.groups()[0]
       label = label.lstrip("Plugin ").rstrip("templates").strip()
       if not c_output:
         print("")
-        print(indentation + "-- " + label)
-    else:
-      # This is a line into a section
-      pattern = re.search('^\[([^\]]+)\](\[([^\]]+)\]){0,1}\s+%(\w+)\s+(%(\w+)\s+){0,1}(.*)$', lstripped)
-      if pattern:
-        (netflow_id, _, ipfix_id, netflow_label, _, ipfix_label, description) = pattern.groups()
-        parts = netflow_id.split(" ")
-        idx = parts[len(parts) - 1]
+        print(f"{indentation}-- {label}")
+    elif pattern := re.search(
+          '^\[([^\]]+)\](\[([^\]]+)\]){0,1}\s+%(\w+)\s+(%(\w+)\s+){0,1}(.*)$',
+          lstripped,
+      ):
+      (netflow_id, _, ipfix_id, netflow_label, _, ipfix_label, description) = pattern.groups()
+      parts = netflow_id.split(" ")
+      idx = parts[len(parts) - 1]
 
-        if not c_output:
-          loc_key = netflow_label.lower()
-          localized.append((loc_key, description))
-          print('%s["%s"] = i18n("flow_fields_description.%s"),' % (indentation, netflow_label, loc_key))
-        else:
-          print('%saddMapping("%s", %s);' % (indentation, netflow_label, idx))
+      if c_output:
+        print('%saddMapping("%s", %s);' % (indentation, netflow_label, idx))
 
+      else:
+        loc_key = netflow_label.lower()
+        localized.append((loc_key, description))
+        print('%s["%s"] = i18n("flow_fields_description.%s"),' % (indentation, netflow_label, loc_key))
 fin.close()
 
 if not c_output:

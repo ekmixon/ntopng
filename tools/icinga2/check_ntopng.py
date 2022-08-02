@@ -49,7 +49,7 @@ def output(label, state = 0, lines = None, perfdata = None, name = 'ntopng'):
 
     pluginoutput += " - "
 
-    pluginoutput += name + ': ' + str(label)
+    pluginoutput += f'{name}: {str(label)}'
 
     if len(lines):
         pluginoutput += ' - '
@@ -95,9 +95,9 @@ class Checker(object):
         req = urllib.request.Request(self.check_url(ifid, checked_host, check_type))
 
         if self.user is not None or self.secret is not None:
-            credentials = ('%s:%s' % (self.user, self.secret))
+            credentials = f'{self.user}:{self.secret}'
             encoded_credentials = base64.b64encode(credentials.encode('ascii'))
-            req.add_header('Authorization', 'Basic %s' % encoded_credentials.decode("ascii"))
+            req.add_header('Authorization', f'Basic {encoded_credentials.decode("ascii")}')
 
         if self.unsecure:
             ssl._create_default_https_context = ssl._create_unverified_context
@@ -106,14 +106,18 @@ class Checker(object):
             with urllib.request.urlopen(req) as response:
                 data = response.read().decode('utf-8')
         except Exception as e:
-            output('Failed to fetch data from ntopng [%s: %s]' % (type(e).__name__, str(e)), 3)
+            output(f'Failed to fetch data from ntopng [{type(e).__name__}: {str(e)}]', 3)
 
         try:
             data = json.loads(data)
         except Exception as e:
             if self.verbose:
                 print(data)
-            output('Failed to parse fetched data as JSON [%s: %s]' % (type(e).__name__, str(e)), 3)
+            output(
+                f'Failed to parse fetched data as JSON [{type(e).__name__}: {str(e)}]',
+                3,
+            )
+
 
         return data
 
@@ -147,7 +151,6 @@ class Checker(object):
 
     @staticmethod
     def check_flow_alerts(fetched, perfdata):
-        status = 0
         curr_perfdata = None
         curr_latest_alert_id = 0
         prev_latest_alert_id = 0
@@ -165,11 +168,13 @@ class Checker(object):
             if 'latest_alert_id' in parsed_perfdata:
                 prev_latest_alert_id = int(parsed_perfdata['latest_alert_id'])
 
-        # If the highest alert id across two consecutive checks has increased, it means there are new flow alerts
-        if curr_latest_alert_id > prev_latest_alert_id:
-            status = 2 # CRITICAL, new flow alerts detected since last check
-
-        output("There are %snew flow alerts" % ('no ' if status == 0 else ''), status, [], curr_perfdata)
+        status = 2 if curr_latest_alert_id > prev_latest_alert_id else 0
+        output(
+            f"There are {'no ' if status == 0 else ''}new flow alerts",
+            status,
+            [],
+            curr_perfdata,
+        )
 
     def check(self, ifid, checked_host, check_type, perfdata):
         res = self.fetch(ifid, checked_host, check_type)
@@ -184,11 +189,25 @@ class Checker(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--version', action = 'version', version = '%(prog)s v' + sys.modules[__name__].__version__)
+    parser.add_argument(
+        '-v',
+        '--version',
+        action='version',
+        version=f'%(prog)s v{sys.modules[__name__].__version__}',
+    )
+
     parser.add_argument('-V', '--verbose', action = 'store_true')
     parser.add_argument('-H', '--host', help = 'Address of the host running ntopng', required = True)
     parser.add_argument("-P", "--port", help = "Port on which ntopng is listening for connections [default: 3000]", type = int, default = 3000)
-    parser.add_argument("-I", "--ifid", help = "Id of the ntopng monitored interface where alerts will be searched for", type = int, choices = range(0, 256), required = True)
+    parser.add_argument(
+        "-I",
+        "--ifid",
+        help="Id of the ntopng monitored interface where alerts will be searched for",
+        type=int,
+        choices=range(256),
+        required=True,
+    )
+
     parser.add_argument("-U", "--user", help = "Name of an ntopng user")
     parser.add_argument("-S", "--secret", help = "Password to authenticate the ntopng user")
     parser.add_argument('-c', '--checked-host', help = 'IP of the host which should be checked for alerts', required = True)

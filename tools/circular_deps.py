@@ -79,17 +79,10 @@ class CircularDeps(object):
                 # Search a cycle with Depth-first traversal
                 cycle = list(nx.find_cycle(self._G, n))
 
-                # If cycle not already found, add it to the results list
-                found = False
-                for c in all_cycles:
-                    if cycle == c:
-                        found = True
-                        break
-
+                found = any(cycle == c for c in all_cycles)
                 if not found:
                     all_cycles.append(cycle)
 
-            # When no cycles are found for the current node, an exception is thrown and it is safe to ignore it
             except nx.exception.NetworkXNoCycle:
                 pass
 
@@ -103,7 +96,13 @@ class CircularDeps(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Find cycles in Lua dependencies. Re-run after removing cycles until no other cycle shows up.')
-    parser.add_argument('-V', '--version', action='version', version='%(prog)s v' + sys.modules[__name__].__version__)
+    parser.add_argument(
+        '-V',
+        '--version',
+        action='version',
+        version=f'%(prog)s v{sys.modules[__name__].__version__}',
+    )
+
     args = parser.parse_args()
 
     tf = CircularDeps()
